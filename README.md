@@ -60,8 +60,23 @@ slip through the probe windows. `--no-probe` removes that risk at 4× the comput
 
 ## Quick start
 
-`conda activate` silently fails on a machine where conda was never initialised for
-your shell, so there is a launcher that sidesteps it entirely:
+**First time on this machine?** Install once — one command, ~10 minutes, mostly
+downloading torch:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\setup_env.ps1     # Windows
+```
+```bash
+bash setup_env.sh                                            # macOS / Linux
+```
+
+You need Python 3.9+ or Anaconda already present, an internet connection, and about
+8 GB of disk. The script figures out the rest — see [Install](#install) for what it
+does and how to steer it.
+
+Then, every time after that: `conda activate` silently fails on a machine where
+conda was never initialised for your shell, so there is a launcher that sidesteps
+it entirely:
 
 ```powershell
 cd C:\Users\ameyn\vocal-splitter
