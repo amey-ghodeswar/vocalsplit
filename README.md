@@ -1,3 +1,15 @@
+---
+title: vocalsplit
+emoji: 🎤
+colorFrom: indigo
+colorTo: gray
+sdk: gradio
+app_file: app.py
+pinned: false
+license: mit
+short_description: Split vocals from instruments, and know when not to
+---
+
 # vocalsplit
 
 Separates a song into **vocals** and **instrumental** — and, when handed a track
@@ -152,27 +164,35 @@ Two paths. Pick the first unless you need an API.
 
 ### Hugging Face Spaces — recommended
 
-Free, no build step, and `app.py` is already the entry point Spaces looks for.
+Free, no build step, and this repo is already shaped like a Space: the YAML header
+at the top of this README is the Space config, and `app.py` is the entry point.
 
-1. Create a Space, SDK **Gradio**, hardware **CPU basic** (free) or a **T4** tier.
-2. Add this YAML to the *top* of `README.md` in the Space repo:
+```bash
+# 1. create an empty Space at huggingface.co/new-space
+#      SDK: Gradio        hardware: CPU basic (free) or a T4 tier
+# 2. push this repo to it
+git remote add space https://huggingface.co/spaces/<you>/vocalsplit
+git push space main
+```
 
-   ```yaml
-   ---
-   title: vocalsplit
-   emoji: 🎤
-   colorFrom: indigo
-   colorTo: gray
-   sdk: gradio
-   sdk_version: 6.25.0
-   app_file: app.py
-   pinned: false
-   ---
-   ```
-3. `git remote add space https://huggingface.co/spaces/<you>/vocalsplit && git push space main`
+Three things that make this work, each of which fails quietly if you change it:
 
-Spaces installs the root `requirements.txt` automatically. On CPU basic a 4-minute
-track takes ~4 minutes rather than ~30 seconds — fine for a demo, not for other people.
+- **`sdk_version` is deliberately absent** from the header, so Spaces installs
+  whichever Gradio it currently defaults to. `app.py` detects at import whether
+  `theme`/`css` belong on `Blocks` (Gradio 5) or on `launch()` (Gradio 6) and adapts.
+  Pin a version only if you have a reason to.
+- **`gradio` is deliberately absent** from `requirements.txt` for the same reason —
+  listing it there fights the SDK version Spaces installs. Locally you get it from
+  `pip install -e ".[web]"`.
+- **`app.py` binds `0.0.0.0` when `SPACE_ID` is set.** Binding localhost builds
+  cleanly and then serves nothing, which is an annoying half hour to debug.
+
+Spaces installs the root `requirements.txt` automatically; on Linux the PyPI torch
+wheels bundle CUDA, so the same file works on CPU and GPU tiers.
+
+On CPU basic a 4-minute track takes ~4 minutes rather than ~30 seconds, which is why
+`MAX_MINUTES` in `app.py` caps CPU uploads at 6 minutes. Fine for a demo; pick a GPU
+tier if you expect other people to use it.
 
 ### Modal + Vercel — if you want an API
 

@@ -11,6 +11,8 @@ you expect anyone else to use it.
 from __future__ import annotations
 
 import argparse
+import inspect
+import os
 import tempfile
 from pathlib import Path
 
@@ -23,6 +25,18 @@ from vocalsplit.features import stem_metrics
 from vocalsplit.separator import DemucsSeparator
 
 BITRATE = 320
+
+# Gradio 6 moved `theme` and `css` from the Blocks constructor to launch(); Gradio 5
+# only accepts them on Blocks. A Space installs whichever version its sdk_version
+# pins, which is not necessarily the one this was written against, so ask rather
+# than assume -- passing them to the wrong one is a hard TypeError at startup.
+STYLE_ON_LAUNCH = "theme" in inspect.signature(gr.Blocks.launch).parameters
+
+# CPU-basic Spaces are ~10x slower than this laptop's GPU, so a track that takes
+# 30 s here takes 5 minutes there. Cap accordingly rather than letting someone
+# queue a 15-minute upload that will time out.
+MAX_MINUTES = {"cuda": 15, "cpu": 6}
+
 _CACHE: dict[str, DemucsSeparator] = {}
 
 
@@ -73,8 +87,11 @@ def separate(audio_path, model, quality, progress=gr.Progress()):
     progress(0.15, desc="decoding audio…")
     mix, sr = load_audio(audio_path, sr=sep.samplerate)
     minutes = mix.shape[1] / sr / 60
-    if minutes > 15:
-        raise gr.Error(f"Track is {minutes:.1f} min; the limit here is 15.")
+    limit = MAX_MINUTES.get(sep.device, 6)
+    if minutes > limit:
+        raise gr.Error(
+            f"Track is {minutes:.1f} min; the limit on {sep.device} is {limit}."
+        )
 
     progress(0.25, desc=f"separating {minutes:.1f} min on {sep.device}…")
     voc = sep.separate(mix, sr)["vocals"]
@@ -113,8 +130,9 @@ CSS = """
 footer {display: none !important}
 """
 
-# Gradio 6 moved theme and css from the Blocks constructor to launch().
-with gr.Blocks(title="vocalsplit") as demo:
+_style = {} if STYLE_ON_LAUNCH else {"theme": gr.themes.Soft(), "css": CSS}
+
+with gr.Blocks(title="vocalsplit", **_style) as demo:
     gr.Markdown(
         """# vocalsplit
 Split a song into **vocals** and **instrumental** — and, if the track has no
@@ -165,13 +183,17 @@ if __name__ == "__main__":
     p = argparse.ArgumentParser()
     p.add_argument("--share", action="store_true", help="temporary public link")
     p.add_argument("--port", type=int, default=7860)
-    p.add_argument("--host", default="127.0.0.1")
+    # A Space must bind 0.0.0.0 or it builds cleanly and is then unreachable.
+    # HF sets SPACE_ID in the container, so detect rather than make you remember.
+    on_spaces = bool(os.environ.get("SPACE_ID"))
+    p.add_argument("--host", default="0.0.0.0" if on_spaces else "127.0.0.1")
     a = p.parse_args()
+
+    kw = {"theme": gr.themes.Soft(), "css": CSS} if STYLE_ON_LAUNCH else {}
     demo.queue(max_size=8).launch(
         server_name=a.host,
         server_port=a.port,
         share=a.share,
-        theme=gr.themes.Soft(),
-        css=CSS,
         max_file_size="60mb",
+        **kw,
     )

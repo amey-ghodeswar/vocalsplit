@@ -10,4 +10,6 @@ lameenc>=1.7            # mp3 encoding
 torch>=2.1
 torchaudio>=2.1
 demucs==4.0.1
-gradio>=5               # app.py only; drop it if you just want the CLI
+# gradio is intentionally NOT listed. Hugging Face Spaces installs the Gradio
+# version its SDK pins, and listing it here fights that. For the local web UI:
+#     pip install -e ".[web]"
