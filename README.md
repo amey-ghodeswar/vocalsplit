@@ -222,6 +222,55 @@ deployment** — both need accounts that are yours to create. Their syntax is ch
 and everything they import from `vocalsplit` is tested, but treat the first deploy as
 debugging, and expect Modal's API to have drifted if you read this much later.
 
+## Sharing it with someone else
+
+Depends entirely on how much you want them to have to do.
+
+### They just want their song split — send them a link
+
+Deploy the Space (above) and send the URL. They open it in a browser, drag a song
+in, download two files. Nothing to install, nothing to explain, works on a phone.
+This is the right answer for almost everyone.
+
+### They want to run it themselves — send them the repo
+
+A GitHub URL, or a zip of the working tree (`git archive --format=zip -o vocalsplit.zip HEAD`
+gives you a clean one — tracked files only, no environments or generated audio).
+
+Then they run **one command**:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\setup_env.ps1     # Windows
+```
+```bash
+bash setup_env.sh                                            # macOS / Linux
+```
+
+That finds conda even when it is not on PATH, falls back to a plain venv with
+`-NoConda` / `--venv`, detects whether there is an NVIDIA GPU and picks the matching
+torch build, installs everything, registers the Jupyter kernel, and verifies the
+result imports before claiming success. Then:
+
+```powershell
+.\run.ps1 ui                     # Windows, no conda activate needed
+```
+```bash
+conda activate vocalsplit && python app.py     # macOS / Linux
+```
+
+What they need first: **Python 3.9+**, about **8 GB of disk** (torch is most of it),
+and patience on the first run — pip pulls ~2.5 GB for the CUDA build, and Demucs
+downloads its 80 MB checkpoint the first time you separate anything. No ffmpeg
+required unless they feed it m4a or wma.
+
+Without an NVIDIA GPU it still works, roughly 10× slower: a 4-minute song takes
+about 4 minutes instead of 30 seconds. Apple Silicon uses Metal automatically.
+
+### They just want the audio — send the mp3s
+
+`vocals.mp3` and `instrumental.mp3` are ordinary files. Nothing about them needs
+this project to play.
+
 ## Tuning the detector to your library
 
 The default thresholds are set from htdemucs behaviour and lean conservative on the

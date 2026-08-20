@@ -11,7 +11,7 @@ output/
 output_mp3/
 testdata/
 split/
-setup.log
+setup*.log
 thresholds.json
 *.wav
 *.mp3
