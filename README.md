@@ -46,6 +46,29 @@ ever *skip* work; it is never allowed to assert that a track has vocals, so a fa
 The tradeoff to know about: a 6-minute instrumental with one 8-bar vocal at 3:20 can
 slip through the probe windows. `--no-probe` removes that risk at 4× the compute.
 
+## Quick start
+
+`conda activate` silently fails on a machine where conda was never initialised for
+your shell, so there is a launcher that sidesteps it entirely:
+
+```powershell
+cd C:\Users\ameyn\vocal-splitter
+
+.\run.ps1                                   # list what it can do
+.\run.ps1 ui                                # browser UI at http://127.0.0.1:7860
+.\run.ps1 lab                               # JupyterLab on the notebook
+.\run.ps1 test                              # test suite
+.\run.ps1 detect "C:\Music\song.mp3"        # classify only, write nothing
+.\run.ps1 split  "C:\Music\song.mp3" -o "C:\Music\split"
+.\run.ps1 split  "C:\Music" -o "C:\Music\split" --model htdemucs_ft
+```
+
+It locates the environment itself, or honours `$env:VOCALSPLIT_PYTHON`.
+
+If you would rather use conda the normal way: run `conda init powershell` once (it
+edits your PowerShell profile), reopen the terminal, and `conda activate vocalsplit`
+will work from then on.
+
 ## Install
 
 ```powershell
