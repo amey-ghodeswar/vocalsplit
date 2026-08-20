@@ -1,0 +1,31 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "vocalsplit"
+version = "0.1.0"
+description = "Vocal/instrument separation that recognises instrumental tracks instead of forcing a split"
+requires-python = ">=3.9"
+dependencies = [
+    "numpy>=1.24,<2.0",
+    "scipy>=1.10",
+    "soundfile>=0.12.1",
+    "soxr>=0.3.7",
+    "librosa>=0.10.1",
+    "torch>=2.1",
+    "torchaudio>=2.1",
+    "demucs==4.0.1",
+    "lameenc>=1.7",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=7"]
+web = ["gradio>=5"]
+notebook = ["ipykernel", "matplotlib", "ipywidgets"]
+
+[project.scripts]
+vocalsplit = "vocalsplit.cli:main"
+
+[tool.setuptools]
+packages = ["vocalsplit"]

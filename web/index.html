@@ -1,0 +1,156 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>vocalsplit</title>
+<style>
+  :root{--bg:#faf9f7;--fg:#1a1a1a;--mut:#6b6b6b;--line:#e2e0dc;--card:#fff;--acc:#00798c}
+  @media (prefers-color-scheme:dark){
+    :root{--bg:#16161a;--fg:#eceae6;--mut:#9a9894;--line:#2c2c33;--card:#1e1e24;--acc:#5bc0be}}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.55 ui-sans-serif,system-ui,-apple-system,Segoe UI,sans-serif}
+  .wrap{max-width:760px;margin:0 auto;padding:48px 20px 80px}
+  h1{font-size:1.9rem;margin:0 0 .3em;letter-spacing:-.02em}
+  p.sub{color:var(--mut);margin:0 0 2em}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:20px;margin-bottom:18px}
+  label{display:block;font-size:.8rem;text-transform:uppercase;letter-spacing:.06em;color:var(--mut);margin-bottom:6px}
+  input[type=url]{width:100%;padding:9px 11px;border:1px solid var(--line);border-radius:7px;
+    background:var(--bg);color:var(--fg);font:13px ui-monospace,SFMono-Regular,Menlo,monospace}
+  #drop{border:2px dashed var(--line);border-radius:12px;padding:44px 20px;text-align:center;
+    cursor:pointer;transition:.15s;color:var(--mut)}
+  #drop:hover,#drop.over{border-color:var(--acc);color:var(--fg)}
+  button{background:var(--acc);color:#fff;border:0;border-radius:8px;padding:11px 22px;
+    font-size:.95rem;font-weight:600;cursor:pointer}
+  button:disabled{opacity:.45;cursor:default}
+  .row{display:flex;gap:14px;flex-wrap:wrap}
+  .row>div{flex:1;min-width:240px}
+  audio{width:100%;margin-top:8px}
+  a.dl{display:inline-block;margin-top:8px;font-size:.85rem;color:var(--acc)}
+  table{width:100%;border-collapse:collapse;font-size:.85rem;margin-top:12px}
+  td{padding:3px 0;border-bottom:1px solid var(--line)}
+  td:last-child{text-align:right;font-family:ui-monospace,monospace;color:var(--mut)}
+  .bar{height:6px;background:var(--line);border-radius:3px;overflow:hidden;width:120px;display:inline-block;vertical-align:middle}
+  .bar>i{display:block;height:100%;background:var(--acc)}
+  .verdict{font-size:1.3rem;font-weight:700;letter-spacing:-.01em}
+  .muted{color:var(--mut);font-size:.9rem}
+  .err{color:#c0392b}
+  .hide{display:none}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>vocalsplit</h1>
+  <p class="sub">Split a song into vocals and instrumental &mdash; and if there is no singing in it,
+  say so rather than inventing a vocal stem out of bleed.</p>
+
+  <div class="card">
+    <label for="ep">Modal endpoint</label>
+    <input id="ep" type="url" placeholder="https://you--vocalsplit-web.modal.run">
+    <p class="muted" style="margin:8px 0 0">From <code>modal deploy deploy/modal_app.py</code>.
+    Saved in this browser only. Audio uploads straight there &mdash; it never touches Vercel.</p>
+  </div>
+
+  <div class="card">
+    <div id="drop">
+      <strong>Drop an audio file</strong><br><span class="muted">or click to choose &middot; max 60 MB</span>
+      <input id="file" type="file" accept="audio/*" class="hide">
+    </div>
+    <p id="picked" class="muted" style="margin:12px 0 0"></p>
+    <p style="margin:14px 0 0"><button id="go" disabled>Separate</button>
+      <span id="status" class="muted" style="margin-left:12px"></span></p>
+  </div>
+
+  <div id="result" class="card hide">
+    <div class="verdict" id="vlabel"></div>
+    <p class="muted" id="vreason" style="margin:.35em 0 0"></p>
+    <table id="votes"></table>
+    <div class="row" id="players" style="margin-top:18px"></div>
+    <details style="margin-top:16px"><summary class="muted">Raw metrics</summary>
+      <pre id="raw" style="font-size:.78rem;overflow-x:auto"></pre></details>
+  </div>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+const ep = $('ep'), drop = $('drop'), fileIn = $('file'),
+      go = $('go'), statusEl = $('status'), result = $('result');
+let chosen = null;
+
+ep.value = localStorage.getItem('vocalsplit-endpoint') || '';
+ep.oninput = () => { localStorage.setItem('vocalsplit-endpoint', ep.value.trim()); sync(); };
+
+const sync = () => { go.disabled = !(chosen && ep.value.trim()); };
+
+drop.onclick = () => fileIn.click();
+drop.ondragover = e => { e.preventDefault(); drop.classList.add('over'); };
+drop.ondragleave = () => drop.classList.remove('over');
+drop.ondrop = e => { e.preventDefault(); drop.classList.remove('over'); pick(e.dataTransfer.files[0]); };
+fileIn.onchange = e => pick(e.target.files[0]);
+
+function pick(f) {
+  if (!f) return;
+  chosen = f;
+  $('picked').textContent = f.name + ' · ' + (f.size / 1e6).toFixed(1) + ' MB';
+  sync();
+}
+
+const say = (t, bad) => { statusEl.textContent = t; statusEl.className = bad ? 'err' : 'muted'; };
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+
+go.onclick = async () => {
+  const base = ep.value.trim().replace(/\/+$/, '');
+  go.disabled = true; result.classList.add('hide'); say('uploading...');
+
+  try {
+    const fd = new FormData();
+    fd.append('file', chosen);
+    const created = await fetch(base + '/jobs', { method: 'POST', body: fd });
+    if (!created.ok) throw new Error('upload failed (' + created.status + ') ' + await created.text());
+    const { call_id } = await created.json();
+
+    // The GPU job outlives a normal request, so poll. Cold start adds ~30s.
+    const started = Date.now();
+    for (;;) {
+      await sleep(2500);
+      const r = await fetch(base + '/jobs/' + call_id);
+      if (!r.ok) throw new Error('poll failed (' + r.status + ')');
+      const j = await r.json();
+      if (j.status === 'done') { render(base, j.result); break; }
+      say('separating... ' + Math.round((Date.now() - started) / 1000) + 's');
+      if (Date.now() - started > 15 * 60 * 1000) throw new Error('timed out after 15 min');
+    }
+  } catch (e) {
+    say(e.message, true);
+  } finally {
+    go.disabled = false;
+  }
+};
+
+function render(base, r) {
+  say('');
+  const icon = { vocal: '\u{1F3A4}', instrumental: '\u{1F3B9}', uncertain: '❓' }[r.label] || '';
+  $('vlabel').textContent = icon + ' ' + r.label.toUpperCase() + ' — p_vocal ' + r.p_vocal.toFixed(3);
+  $('vreason').textContent = r.reasons[0];
+
+  $('votes').innerHTML = Object.entries(r.votes).map(([k, v]) =>
+    '<tr><td>' + k + '</td><td><span class="bar"><i style="width:' + (v * 100).toFixed(0) + '%"></i></span>'
+    + '&nbsp;' + v.toFixed(2) + '</td></tr>').join('');
+
+  $('players').innerHTML = r.written.length
+    ? r.written.map(n => {
+        const url = base + '/files/' + r.job_id + '/' + n;
+        return '<div><label>' + n.replace('.mp3', '') + '</label>'
+             + '<audio controls preload="none" src="' + url + '"></audio>'
+             + '<a class="dl" href="' + url + '" download>download</a></div>';
+      }).join('')
+    : '<p class="muted">No files were produced &mdash; this track has no vocals to separate, '
+      + 'so writing a "vocals" file would just be handing you bleed.</p>';
+
+  $('raw').textContent = JSON.stringify(r.metrics, null, 2);
+  result.classList.remove('hide');
+}
+sync();
+</script>
+</body>
+</html>

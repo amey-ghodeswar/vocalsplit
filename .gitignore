@@ -1,0 +1,18 @@
+__pycache__/
+*.pyc
+*.egg-info/
+.pytest_cache/
+.ipynb_checkpoints/
+.vercel/
+.venv/
+
+# generated audio and scratch
+output/
+output_mp3/
+testdata/
+split/
+setup.log
+thresholds.json
+*.wav
+*.mp3
+*.flac

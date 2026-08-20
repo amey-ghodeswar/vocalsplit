@@ -1,0 +1,13 @@
+# Also used verbatim by Hugging Face Spaces (it installs the root requirements.txt).
+# On Linux the PyPI torch wheels bundle CUDA, so this works on CPU and GPU Spaces alike.
+# On Windows PyPI torch is CPU-only -- see setup_env.ps1 for the CUDA index URL.
+numpy>=1.24,<2.0        # demucs 4.0.1 still expects the numpy 1.x ABI
+scipy>=1.10
+soundfile>=0.12.1
+soxr>=0.3.7
+librosa>=0.10.1
+lameenc>=1.7            # mp3 encoding
+torch>=2.1
+torchaudio>=2.1
+demucs==4.0.1
+gradio>=5               # app.py only; drop it if you just want the CLI
