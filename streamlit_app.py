@@ -15,6 +15,7 @@ login. Its limits shape everything below:
 """
 from __future__ import annotations
 
+import hmac
 import io
 import tempfile
 import threading
@@ -122,9 +123,48 @@ def show_verdict(v: dict, m: dict) -> None:
             st.progress(float(val))
 
 
+def _configured_key() -> str:
+    """The shared access key, or "" when none is configured.
+
+    On Streamlit Community Cloud: app menu -> Settings -> Secrets ->
+        ACCESS_KEY = "whatever-you-hand-out"
+    Locally: the same line in .streamlit/secrets.toml (git-ignored).
+    With no key set anywhere the app runs open, so `streamlit run` needs no setup.
+    """
+    try:
+        return str(st.secrets.get("ACCESS_KEY", "")).strip()
+    except Exception:  # noqa: BLE001  (no secrets file at all)
+        return ""
+
+
+def require_key() -> None:
+    """Show nothing but a key prompt until the visitor enters the configured key.
+
+    This is a gate against passers-by, not real authentication: one shared key,
+    remembered for the browser session only (a page reload asks again). Good
+    enough to keep a free CPU server for the people you actually sent the link to.
+    """
+    key = _configured_key()
+    if not key or st.session_state.get("authed"):
+        return
+
+    st.title("vocalsplit")
+    st.write("This is a private preview. Enter the access key you were given.")
+    with st.form("gate"):
+        given = st.text_input("Access key", type="password")
+        submitted = st.form_submit_button("Enter", type="primary")
+    if submitted:
+        if hmac.compare_digest(given.strip(), key):
+            st.session_state["authed"] = True
+            st.rerun()
+        st.error("That key is not right.")
+    st.stop()
+
+
 # ----------------------------------------------------------------------------- UI
 
 st.set_page_config(page_title="vocalsplit", page_icon="🎤", layout="centered")
+require_key()
 
 st.title("vocalsplit")
 st.markdown(
