@@ -1,6 +1,11 @@
-# Also used verbatim by Hugging Face Spaces (it installs the root requirements.txt).
-# On Linux the PyPI torch wheels bundle CUDA, so this works on CPU and GPU Spaces alike.
-# On Windows PyPI torch is CPU-only -- see setup_env.ps1 for the CUDA index URL.
+# Consumed by hosted platforms only (Streamlit Community Cloud, Hugging Face Spaces).
+# Local installs go through setup_env.ps1 / setup_env.sh and pyproject.toml instead.
+#
+# The extra index makes pip pick the CPU-only torch wheel (~200 MB) instead of the
+# PyPI Linux wheel that bundles CUDA (~2.5 GB). Streamlit Community Cloud has no GPU
+# and ~2.7 GB RAM, so the CUDA build is pure waste there. Remove the index line if
+# you ever deploy this to a GPU host.
+--extra-index-url https://download.pytorch.org/whl/cpu
 numpy>=1.24,<2.0        # demucs 4.0.1 still expects the numpy 1.x ABI
 scipy>=1.10
 soundfile>=0.12.1
@@ -10,6 +15,7 @@ lameenc>=1.7            # mp3 encoding
 torch>=2.1
 torchaudio>=2.1
 demucs==4.0.1
+streamlit>=1.40         # streamlit_app.py; harmless elsewhere
 # gradio is intentionally NOT listed. Hugging Face Spaces installs the Gradio
 # version its SDK pins, and listing it here fights that. For the local web UI:
 #     pip install -e ".[web]"

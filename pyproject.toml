@@ -22,6 +22,7 @@ dependencies = [
 [project.optional-dependencies]
 dev = ["pytest>=7"]
 web = ["gradio>=5"]
+streamlit = ["streamlit>=1.40"]
 notebook = ["ipykernel", "matplotlib", "ipywidgets"]
 
 [project.scripts]

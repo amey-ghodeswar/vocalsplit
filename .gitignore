@@ -16,3 +16,4 @@ thresholds.json
 *.wav
 *.mp3
 *.flac
+.streamlit/secrets.toml

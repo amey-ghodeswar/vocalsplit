@@ -67,7 +67,12 @@ class DemucsSeparator:
                 progress=self.progress,
             )[0]
 
-        return (out * std + mean).cpu().numpy().astype(np.float32)
+        # In place: `out * std + mean` followed by astype() makes three full copies
+        # of the [sources, 2, n] output, ~1 GB transient on a 4-minute track. On a
+        # 2.7 GB host that is the difference between fitting and being killed.
+        out = out.cpu()
+        out.mul_(std.cpu()).add_(mean.cpu())
+        return np.ascontiguousarray(out.numpy(), dtype=np.float32)
 
     def separate(self, wav: np.ndarray, sr: int) -> dict[str, np.ndarray]:
         """wav: [2, n] float32 at `sr`. Returns {source_name: [2, n]}."""

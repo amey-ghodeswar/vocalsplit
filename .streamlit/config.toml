@@ -1,0 +1,10 @@
+[server]
+maxUploadSize = 60          # MB; a 6-minute 320 kbps mp3 is ~14 MB, a wav ~64 MB
+headless = true
+
+[browser]
+gatherUsageStats = false
+
+[theme]
+base = "light"
+primaryColor = "#00798c"

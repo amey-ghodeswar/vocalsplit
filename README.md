@@ -163,26 +163,69 @@ jupyter lab
 
 ## Web UI
 
-`app.py` is one file that serves a browser UI. The same file runs locally and on
-Hugging Face Spaces.
+Two front-ends, same behaviour: upload a song, get a verdict and two players. On an
+instrumental both produce no files at all and say why.
+
+`app.py` (Gradio) is the one to run on your own machine; it uses the GPU if there
+is one and lets you pick the model and quality.
 
 ```powershell
 conda activate vocalsplit
 python app.py              # http://127.0.0.1:7860
-python app.py --share      # plus a temporary public link
+python app.py --share      # plus a temporary public link, valid 72 h
 ```
 
-Upload a song, get a verdict and two players. On an instrumental it produces no
-files at all and says why.
+`streamlit_app.py` (Streamlit) is the one that runs on the free public website, see
+[Deploy](#deploy). It is CPU-only, fixed to `htdemucs`, caps uploads at 6 minutes
+and runs one separation at a time, because the free host has ~2.7 GB of RAM.
+
+```powershell
+pip install -e ".[streamlit]"
+streamlit run streamlit_app.py     # http://localhost:8501
+```
 
 ## Deploy
 
-Two paths. Pick the first unless you need an API.
+Three paths. The first is the only one that is free without a card on file.
 
-### Hugging Face Spaces — recommended
+### Streamlit Community Cloud — recommended, free
 
-Free, no build step, and this repo is already shaped like a Space: the YAML header
-at the top of this README is the Space config, and `app.py` is the entry point.
+Free with a GitHub login, no payment method, one permanent URL. The limits are
+~2.7 GB RAM and up to 2 shared vCPUs, which is why `streamlit_app.py` exists as a
+separate, leaner front-end: a 4-minute track peaks near 2 GB and takes roughly 4 to
+10 minutes there. The app sleeps after a period of no visitors and wakes on the next
+one. Measured before deploying: 4 min of audio, 2 threads, 191 s, peak RSS 1.96 GB.
+
+```bash
+# 1. put the repo on GitHub (public repo; Community Cloud reads it from there)
+git remote add origin https://github.com/<you>/vocalsplit.git
+git push -u origin main --tags
+
+# 2. share.streamlit.io -> sign in with GitHub -> New app
+#      repository: <you>/vocalsplit   branch: main   main file: streamlit_app.py
+#      Advanced settings -> Python version 3.11
+#    Deploy. First build takes several minutes (torch); later ones are quick.
+```
+
+Four files make this work:
+
+- **`requirements.txt`** starts with `--extra-index-url .../whl/cpu`, so pip installs
+  the 200 MB CPU torch instead of the 2.5 GB CUDA one. Without that line the build
+  still succeeds but burns memory for nothing.
+- **`packages.txt`** lists `ffmpeg`, the apt package, so m4a/aac uploads decode.
+- **`.streamlit/config.toml`** sets the 60 MB upload cap and the theme.
+- **`streamlit_app.py`** holds a global lock so two visitors cannot run Demucs at
+  once; the second one waits, which is better than the container being killed.
+
+Python 3.11 matters: `numpy<2` has no wheels past 3.12 and `demucs 4.0.1` needs it.
+
+### Hugging Face Spaces — paid since 2026
+
+This repo is still shaped like a Space (the YAML header at the top of this README is
+the Space config, `app.py` the entry point), but Gradio and Docker Spaces now require
+a PRO subscription (US$9/month at the time of writing). Static Spaces stay free and
+cannot run the model. If you do pay, PRO also unlocks ZeroGPU, which would make a
+song take ~30 s instead of ~4 min; that needs a `@spaces.GPU` decorator in `app.py`.
 
 ```bash
 # 1. create an empty Space at huggingface.co/new-space
@@ -213,6 +256,7 @@ tier if you expect other people to use it.
 
 ### Modal + Vercel — if you want an API
 
+Modal gives US$30/month of free compute but requires a payment method on file.
 Vercel cannot run the separation: no GPU, a 250 MB unzipped bundle cap (torch alone
 is ~2.5 GB), and a 60 s function timeout on Hobby. So Modal runs the GPU work and
 Vercel serves a static page that talks to it. Audio goes browser → Modal directly and
@@ -245,9 +289,13 @@ Depends entirely on how much you want them to have to do.
 
 ### They just want their song split — send them a link
 
-Deploy the Space (above) and send the URL. They open it in a browser, drag a song
-in, download two files. Nothing to install, nothing to explain, works on a phone.
-This is the right answer for almost everyone.
+Deploy to Streamlit Community Cloud (above) and send the URL. They open it in a
+browser, drag a song in, wait a few minutes, download two files. Nothing to install,
+nothing to explain, works on a phone. This is the right answer for almost everyone;
+the only cost is patience, since the free server is CPU-only.
+
+For a one-off with GPU speed, `python app.py --share` on this laptop prints a public
+link that works for 72 hours while the laptop is on.
 
 ### They want to run it themselves — send them the repo
 
