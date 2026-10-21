@@ -219,6 +219,21 @@ Four files make this work:
 
 Python 3.11 matters: `numpy<2` has no wheels past 3.12 and `demucs 4.0.1` needs it.
 
+**Access key.** The site is public by default. To keep it to people you send the key
+to, open the app on share.streamlit.io, then Settings -> Secrets, and add
+
+```toml
+ACCESS_KEY = "the-key-you-hand-out"
+```
+
+Secrets take about a minute to propagate and need no redeploy. Visitors then see a
+key prompt and nothing else until they enter it; the key is remembered for the
+browser session, so a page reload asks again. Change the key in the same place to
+lock out everyone who had the old one. With no `ACCESS_KEY` set the app runs open,
+which is also what happens on a local `streamlit run` (put the same line in
+`.streamlit/secrets.toml`, which is git-ignored, to test the gate locally). This is
+a shared key against passers-by, not per-user authentication.
+
 ### Hugging Face Spaces — paid since 2026
 
 This repo is still shaped like a Space (the YAML header at the top of this README is
