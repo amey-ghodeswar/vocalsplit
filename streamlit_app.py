@@ -148,7 +148,7 @@ def require_key() -> None:
     if not key or st.session_state.get("authed"):
         return
 
-    st.title("vocalsplit")
+    hero()
     st.write("This is a private preview. Enter the access key you were given.")
     with st.form("gate"):
         given = st.text_input("Access key", type="password")
@@ -161,12 +161,149 @@ def require_key() -> None:
     st.stop()
 
 
+# ----------------------------------------------------------------------------- look
+
+# A small café at dusk: lamplight in one corner, oat-coloured paper, espresso
+# text, and a quiet equaliser beside the title as if a record is playing low.
+# Colours live in .streamlit/config.toml too (widgets read them from there);
+# this sheet adds what the theme file cannot: the background, the fonts, the
+# hero, and the warm shadows.
+_NOISE = (
+    "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' "
+    "height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' "
+    "baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix "
+    "values='0 0 0 0 0.32 0 0 0 0 0.19 0 0 0 0 0.08 0 0 0 0.09 0'/%3E%3C/filter%3E"
+    "%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E\")"
+)
+
+THEME_CSS = f"""
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght,SOFT@9..144,400..700,50..100&family=Figtree:wght@400;500;600&display=swap');
+
+:root {{
+  --espresso: #2C1B12;
+  --walnut: #6B4A36;
+  --caramel: #B06E2C;
+  --lamp: #F0B45A;
+  --oat: #F6EBD9;
+  --linen: #E9D5B8;
+  --shadow: 0 18px 40px -22px rgba(76, 42, 20, .45);
+}}
+
+/* Text only. Streamlit's icon glyphs are text in an icon font, so no broad
+   [class*=...] selectors here or the icons turn into their own names. */
+.stApp, .stApp p, .stApp label, .stApp button, .stApp input, .stApp summary, .stApp small {{
+  font-family: 'Figtree', ui-sans-serif, system-ui, sans-serif;
+}}
+.stApp [data-testid="stIconMaterial"], .stApp .material-symbols-rounded {{
+  font-family: 'Material Symbols Rounded' !important;
+}}
+h1, h2, h3, [data-testid="stMetricValue"], [data-testid="stMetricValue"] div, .vs-title {{
+  font-family: 'Fraunces', Georgia, serif;
+  font-variation-settings: 'SOFT' 100, 'opsz' 72;
+}}
+
+.stApp {{
+  color: var(--espresso);
+  background:
+    {_NOISE} repeat,
+    radial-gradient(1100px 650px at 8% -10%, rgba(240,180,90,.62) 0%, rgba(240,180,90,0) 62%),
+    radial-gradient(820px 560px at 104% 106%, rgba(176,110,44,.32) 0%, rgba(176,110,44,0) 60%),
+    linear-gradient(180deg, #EDDAC0 0%, #E5CDAB 100%);
+}}
+[data-testid="stHeader"] {{ background: transparent; }}
+[data-testid="stMainBlockContainer"], .block-container {{ padding-top: 3.2rem; }}
+
+/* hero: the title with a slow equaliser beside it */
+.vs-hero {{ display: flex; align-items: flex-end; gap: 18px; margin: .4rem 0 .2rem; }}
+.vs-title {{
+  margin: 0; line-height: 1; font-size: 3.4rem; font-weight: 600;
+  letter-spacing: -.02em; color: var(--espresso);
+}}
+.vs-eq {{ display: flex; align-items: flex-end; gap: 5px; height: 38px; padding-bottom: 6px; }}
+.vs-eq i {{
+  display: block; width: 7px; height: 38px; border-radius: 4px 4px 2px 2px;
+  background: linear-gradient(180deg, var(--lamp), var(--caramel));
+  transform-origin: bottom; animation: vs-pulse 2.6s ease-in-out infinite alternate;
+}}
+.vs-eq i:nth-child(1) {{ animation-duration: 2.9s; transform: scaleY(.45); }}
+.vs-eq i:nth-child(2) {{ animation-duration: 2.3s; animation-delay: -.8s; transform: scaleY(.8); }}
+.vs-eq i:nth-child(3) {{ animation-duration: 3.3s; animation-delay: -1.6s; transform: scaleY(.6); }}
+.vs-eq i:nth-child(4) {{ animation-duration: 2.5s; animation-delay: -.4s; transform: scaleY(.95); }}
+.vs-eq i:nth-child(5) {{ animation-duration: 3.1s; animation-delay: -2.1s; transform: scaleY(.5); }}
+@keyframes vs-pulse {{ from {{ transform: scaleY(.28); }} to {{ transform: scaleY(1); }} }}
+@media (prefers-reduced-motion: reduce) {{ .vs-eq i {{ animation: none; }} }}
+
+[data-testid="stMarkdownContainer"] p {{ color: #3E2A1E; line-height: 1.6; }}
+[data-testid="stMarkdownContainer"] strong {{ color: var(--espresso); }}
+
+/* the paper the song lands on */
+[data-testid="stFileUploaderDropzone"] {{
+  background: var(--oat); border: 1.5px dashed rgba(107,74,54,.45);
+  border-radius: 18px; box-shadow: var(--shadow);
+}}
+[data-testid="stFileUploaderDropzone"]:hover {{ border-color: var(--caramel); }}
+[data-testid="stFileUploaderFile"] {{ color: var(--espresso); }}
+
+/* buttons: caramel for the one action, oat for the rest */
+[data-testid="stBaseButton-primary"] {{
+  background: linear-gradient(180deg, #BD7A33, #A4642A); border: 0; color: #FFF7EA;
+  font-weight: 600; letter-spacing: .01em; box-shadow: 0 10px 22px -12px rgba(120,70,30,.6);
+}}
+[data-testid="stBaseButton-primary"]:hover {{ background: linear-gradient(180deg, #C8853B, #AD6B2D); color: #FFF7EA; }}
+[data-testid="stBaseButton-primary"]:disabled {{ background: #D7BE9C; color: #8A6E55; box-shadow: none; }}
+[data-testid="stBaseButton-secondary"] {{
+  background: var(--oat); border: 1px solid rgba(107,74,54,.35); color: var(--espresso);
+}}
+[data-testid="stBaseButton-secondary"]:hover {{ border-color: var(--caramel); color: var(--caramel); }}
+
+/* status, result expander, form, alerts: the same warm card */
+[data-testid="stExpander"] details, [data-testid="stForm"] {{
+  background: var(--oat); border: 1px solid rgba(107,74,54,.22); border-radius: 16px;
+  box-shadow: var(--shadow);
+}}
+[data-testid="stExpander"] summary {{ color: var(--espresso); }}
+[data-testid="stAlert"] {{ border-radius: 14px; }}
+
+/* verdict */
+[data-testid="stMetricLabel"] {{ color: var(--walnut); }}
+[data-testid="stMetricValue"] {{ color: var(--espresso); font-size: 2.3rem; }}
+[data-testid="stProgress"] [role="progressbar"] {{
+  background: rgba(107,74,54,.16); border-radius: 999px; overflow: hidden; height: 7px;
+}}
+[data-testid="stProgress"] [role="progressbar"] > div {{
+  background: linear-gradient(90deg, var(--caramel), var(--lamp)); border-radius: 999px;
+}}
+
+/* players and small print */
+audio {{ width: 100%; border-radius: 999px; filter: sepia(.45) saturate(1.05) hue-rotate(-6deg); }}
+[data-testid="stCaptionContainer"] {{ color: var(--walnut); }}
+[data-testid="stCaptionContainer"] code, [data-testid="stMarkdownContainer"] code {{
+  background: rgba(176,110,44,.12); color: #7A4A1C; border-radius: 6px; padding: .1em .35em;
+}}
+"""
+
+
+def inject_style() -> None:
+    st.markdown(f"<style>{THEME_CSS}</style>", unsafe_allow_html=True)
+
+
+def hero() -> None:
+    st.markdown(
+        '<div class="vs-hero">'
+        '<div class="vs-eq" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></div>'
+        '<h1 class="vs-title">vocalsplit</h1>'
+        "</div>",
+        unsafe_allow_html=True,
+    )
+
+
 # ----------------------------------------------------------------------------- UI
 
 st.set_page_config(page_title="vocalsplit", page_icon="🎤", layout="centered")
+inject_style()
 require_key()
 
-st.title("vocalsplit")
+hero()
 st.markdown(
     "Split a song into **vocals** and **instrumental**, and if the track has no "
     "singing in it, say so instead of inventing a vocal stem out of bleed.\n\n"
