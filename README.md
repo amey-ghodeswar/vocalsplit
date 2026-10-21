@@ -4,6 +4,8 @@ emoji: 🎤
 colorFrom: indigo
 colorTo: gray
 sdk: gradio
+sdk_version: 6.25.0
+python_version: "3.11"
 app_file: app.py
 pinned: false
 license: mit
@@ -79,7 +81,7 @@ conda was never initialised for your shell, so there is a launcher that sidestep
 it entirely:
 
 ```powershell
-cd C:\Users\ameyn\vocal-splitter
+cd D:\claude\vocal-splitter
 
 .\run.ps1                                   # list what it can do
 .\run.ps1 ui                                # browser UI at http://127.0.0.1:7860
@@ -192,10 +194,10 @@ git push space main
 
 Three things that make this work, each of which fails quietly if you change it:
 
-- **`sdk_version` is deliberately absent** from the header, so Spaces installs
-  whichever Gradio it currently defaults to. `app.py` detects at import whether
-  `theme`/`css` belong on `Blocks` (Gradio 5) or on `launch()` (Gradio 6) and adapts.
-  Pin a version only if you have a reason to.
+- **`sdk_version` is pinned to 6.25.0** in the header, the version this was verified
+  against locally, so the Space build is reproducible. `app.py` still detects at import
+  whether `theme`/`css` belong on `Blocks` (Gradio 5) or on `launch()` (Gradio 6), so
+  bumping the pin later is safe. `python_version` is pinned to 3.11 for the same reason.
 - **`gradio` is deliberately absent** from `requirements.txt` for the same reason —
   listing it there fights the SDK version Spaces installs. Locally you get it from
   `pip install -e ".[web]"`.
