@@ -1,20 +1,21 @@
 [server]
 maxUploadSize = 60          # MB; a 6-minute 320 kbps mp3 is ~14 MB, a wav ~64 MB
 headless = true
+enableStaticServing = true  # serves ./static at app/static/..., the painted background
 
 [browser]
 gatherUsageStats = false
 
-# Café at dusk. The same six colours are declared in streamlit_app.py's THEME_CSS;
-# this file is what Streamlit's own widgets read, that sheet is everything else.
+# The painted room. Streamlit's widgets read their colours from here; the CSS in
+# streamlit_app.py (THEME_CSS) adds the canvas, the glass and the text shadows.
 [theme]
-base = "light"
-primaryColor = "#B06E2C"              # caramel: the one action, the bars
-backgroundColor = "#E9D5B8"           # linen: the room (the CSS paints a glow over it)
-secondaryBackgroundColor = "#F6EBD9"  # oat: paper the widgets sit on
-textColor = "#2C1B12"                 # espresso
-linkColor = "#8C4A1E"
-borderColor = "#D4B894"
+base = "dark"
+primaryColor = "#C9843A"              # caramel: the one action, the bars
+backgroundColor = "#3F3048"           # the painting's wall, under the transparent app
+secondaryBackgroundColor = "#4A3647"  # widgets that the CSS does not turn to glass
+textColor = "#F7EBDC"                 # warm cream, the words in the air
+linkColor = "#F6C87A"
+borderColor = "#8A6A5A"
 font = "Figtree, sans-serif"
 headingFont = "Fraunces, serif"
 baseRadius = "14px"
